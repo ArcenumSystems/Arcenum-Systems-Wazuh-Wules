@@ -319,7 +319,7 @@ Tested and verified on **Wazuh 4.14.5** — rules firing in production environme
 
 ## License & Attribution
 
-© 2026 Pradhyumna Ghogare / Arcenum Systems. MIT License — free to use and modify with attribution.
+© 2024 Pradhyumna Ghogare / Arcenum Systems. MIT License — free to use and modify with attribution.
 
 All detection patterns, rule logic, and MITRE mappings are original research. If you use these rules in your environment or build on them, attribution is appreciated.
 
