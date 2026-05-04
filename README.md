@@ -14,6 +14,8 @@
 
 **[Pradhyumna Ghogare](https://github.com/PradhyumnaGhogare)**
 
+⭐ **Star this repo if you use it in your SOC** &nbsp;|&nbsp; 👁️ **Watch for new rule drops**
+
 </div>
 
 ---
@@ -209,6 +211,17 @@ Purpose-built for cloud-native environments. Rules trigger on container runtime 
 | 11–12 | `arcenum_medium` | Review within business hours | Suspicious but requires context |
 
 All alerts carry an inline `WHY THIS FIRES` comment in the XML explaining the adversary motivation — designed for L1/L2 analysts to triage without needing to look up the technique.
+
+---
+
+## Who Uses This
+
+| Role | How They Use It |
+|------|----------------|
+| **SOC Analyst (L1/L2)** | Pre-mapped severity levels + inline `WHY THIS FIRES` comments for fast triage — no technique lookup needed |
+| **Detection Engineer** | MITRE ATT&CK aligned rules ready to extend, tune, or fork into custom detection logic |
+| **Security Architect** | 6-domain coverage across Linux, Windows, AD, AWS, Network, and K8s — deploy as a unified baseline |
+| **Red Teamer** | Validate your TTPs against these detections before a real engagement |
 
 ---
 
