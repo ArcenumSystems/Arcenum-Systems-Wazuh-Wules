@@ -12,7 +12,7 @@
 
 *Kernel rootkits · Active Directory abuse chains · Cloud identity exploitation · Container escapes · Covert C2 channels*
 
-**[arcenum-systems.vercel.app](https://arcenum-systems.vercel.app)** · **[Pradhyumna Ghogare](https://github.com/PradhyumnaGhogare)**
+**[Pradhyumna Ghogare](https://github.com/PradhyumnaGhogare)**
 
 </div>
 
