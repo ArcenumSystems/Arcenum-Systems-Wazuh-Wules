@@ -1,0 +1,146 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Advanced Active Directory Attack Detection
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2026 Pradhyumna Ghogare / Arcenum Systems
+  Project:   Arcenum Systems Threat Detection Engine
+  Version:   2.0.0
+  Released:  2026-04-29
+
+  PROPRIETARY DETECTION LOGIC — DO NOT REDISTRIBUTE WITHOUT ATTRIBUTION
+  All detection patterns, rule logic, and MITRE mappings are original
+  research by Pradhyumna Ghogare / Arcenum Systems.
+
+  Coverage:
+  - DCSync attack
+  - Golden Ticket / Silver Ticket
+  - Kerberoasting
+  - AS-REP Roasting
+  - Pass-the-Ticket
+  - Overpass-the-Hash
+  - AdminSDHolder abuse
+  - LDAP reconnaissance (BloodHound)
+  - GPO modification abuse
+  - SID History injection
+  - DCShadow attack
+  - Skeleton Key attack
+  - LAPS password read
+  - AD CS (Certificate Services) abuse
+  ============================================================
+-->
+
+<group name="arcenum_active_directory,">
+
+  <rule id="202001" level="15">
+    <field name="win.system.eventID">^4662$</field>
+    <field name="win.eventdata.properties">{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}|{1131f6ab-9c07-11d1-f79f-00c04fc2dcd2}|{89e95b76-444d-4c62-991a-0facbeda640c}</field>
+    <description>Arcenum [CRITICAL]: DCSync replication rights exercised - full AD credential dump in progress (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1003.006</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="202010" level="15">
+    <field name="win.system.eventID">^4769$</field>
+    <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+    <description>Arcenum [CRITICAL]: Kerberos TGS request with RC4 encryption from non-legacy host - Golden/Silver Ticket likely (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1558.001</id></mitre>
+    <group>credential_access,lateral_movement,arcenum_critical,</group>
+  </rule>
+
+  <rule id="202011" level="15">
+    <field name="win.system.eventID">^4768$</field>
+    <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+    <field name="win.eventdata.preAuthType">^0$</field>
+    <description>Arcenum [CRITICAL]: TGT requested with RC4 and no pre-auth - forged Golden Ticket in use (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1558.001</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="202020" level="14">
+    <field name="win.system.eventID">^4769$</field>
+    <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+    <field name="win.eventdata.serviceName">^\$</field>
+    <description>Arcenum [HIGH]: Multiple RC4 TGS requests for service accounts - Kerberoasting attack in progress (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1558.003</id></mitre>
+    <group>credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="202030" level="14">
+    <field name="win.system.eventID">^4768$</field>
+    <field name="win.eventdata.preAuthType">^0$</field>
+    <description>Arcenum [HIGH]: Kerberos AS-REQ without pre-authentication - AS-REP Roasting target account identified (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1558.004</id></mitre>
+    <group>credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="202040" level="14">
+    <field name="win.system.eventID">^4768$</field>
+    <field name="win.eventdata.ipAddress">^::1$|^127\.0\.0\.1$</field>
+    <description>Arcenum [HIGH]: Kerberos TGT requested from loopback - Pass-the-Ticket or Overpass-the-Hash technique (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1550.003</id></mitre>
+    <group>lateral_movement,credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="202050" level="15">
+    <field name="win.system.eventID">^4742$</field>
+    <field name="full_log">servicePrincipalName.*GC\/|nTDSDSA</field>
+    <description>Arcenum [CRITICAL]: Rogue DC registration detected - DCShadow attack in progress (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1207</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="202060" level="15">
+    <field name="win.system.eventID">^4611$</field>
+    <field name="full_log">lsass\.exe.*misc::skeleton|LSASS.*patched</field>
+    <description>Arcenum [CRITICAL]: LSASS patched with Skeleton Key - all accounts compromised with master password (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1556.001</id></mitre>
+    <group>credential_access,persistence,arcenum_critical,</group>
+  </rule>
+
+  <rule id="202070" level="13">
+    <field name="win.system.eventID">^4662$</field>
+    <description>Arcenum [HIGH]: Rapid AD object enumeration from single host - BloodHound or LDAP recon (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1069.002</id></mitre>
+    <group>discovery,arcenum_high,</group>
+  </rule>
+
+  <rule id="202080" level="14">
+    <field name="win.system.eventID">^5136$</field>
+    <field name="win.eventdata.objectClass">groupPolicyContainer</field>
+    <description>Arcenum [HIGH]: Group Policy Object modified - mass persistence or privilege escalation via GPO (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1484.001</id></mitre>
+    <group>defense_evasion,privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="202090" level="14">
+    <field name="win.system.eventID">^4886$</field>
+    <description>Arcenum [HIGH]: Certificate requested from AD CS - verify for ESC1/ESC3 template abuse (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1649</id></mitre>
+    <group>credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="202091" level="15">
+    <field name="win.system.eventID">^4887$</field>
+    <field name="win.eventdata.requester">.*\\Administrator|.*\\krbtgt|.*\\DC\$</field>
+    <description>Arcenum [CRITICAL]: High-privilege certificate issued by AD CS - domain compromise via ADCS ESC attack (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1649</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="202100" level="15">
+    <field name="win.system.eventID">^4765$|^4766$</field>
+    <description>Arcenum [CRITICAL]: SID History added to account - stealthy privilege escalation via SID injection (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1134.005</id></mitre>
+    <group>privilege_escalation,arcenum_critical,</group>
+  </rule>
+
+  <rule id="202110" level="14">
+    <field name="win.system.eventID">^5136$</field>
+    <field name="full_log">AdminSDHolder|CN=AdminSDHolder</field>
+    <description>Arcenum [HIGH]: AdminSDHolder ACL modified - persistent backdoor into privileged groups (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1222.001</id></mitre>
+    <group>persistence,privilege_escalation,arcenum_high,</group>
+  </rule>
+
+</group>

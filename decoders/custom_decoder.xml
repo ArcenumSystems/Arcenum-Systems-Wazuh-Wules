@@ -1,0 +1,48 @@
+<!--
+  Arcenum Systems - Custom Log Decoders
+  Author: Pradhyumna Ghogare
+  Project: Arcenum Systems
+  Version: 1.0.0
+  Last Updated: 2026-04-24
+
+  Decoders for:
+  - Arcenum Systems internal audit logs
+  - Custom application security events
+  - Normalized endpoint agent events
+-->
+
+<decoder name="arcenum-sentinel">
+  <prematch>ArcenumSentinel:</prematch>
+</decoder>
+
+<decoder name="arcenum-sentinel-alert">
+  <parent>arcenum-sentinel</parent>
+  <prematch>ArcenumSentinel: ALERT</prematch>
+  <regex>ArcenumSentinel: ALERT level=(\S+) src=(\S+) user=(\S+) action=(\S+) detail="(\.+)"</regex>
+  <order>alert.level, src_ip, user, action, extra_data</order>
+</decoder>
+
+<decoder name="arcenum-sentinel-auth">
+  <parent>arcenum-sentinel</parent>
+  <prematch>ArcenumSentinel: AUTH</prematch>
+  <regex>ArcenumSentinel: AUTH status=(\S+) user=(\S+) src=(\S+) method=(\S+)</regex>
+  <order>status, user, src_ip, auth_method</order>
+</decoder>
+
+<decoder name="arcenum-sentinel-endpoint">
+  <parent>arcenum-sentinel</parent>
+  <prematch>ArcenumSentinel: ENDPOINT</prematch>
+  <regex>ArcenumSentinel: ENDPOINT host=(\S+) pid=(\d+) process=(\S+) cmdline="(\.+)" user=(\S+)</regex>
+  <order>hostname, process.pid, process.name, process.cmdline, user</order>
+</decoder>
+
+<decoder name="arcenum-wolfsense">
+  <prematch>WolfsenseEDR:</prematch>
+</decoder>
+
+<decoder name="arcenum-wolfsense-detection">
+  <parent>arcenum-wolfsense</parent>
+  <prematch>WolfsenseEDR: DETECT</prematch>
+  <regex>WolfsenseEDR: DETECT technique=(\S+) host=(\S+) pid=(\d+) process=(\S+) severity=(\S+)</regex>
+  <order>mitre.technique, hostname, process.pid, process.name, alert.severity</order>
+</decoder>

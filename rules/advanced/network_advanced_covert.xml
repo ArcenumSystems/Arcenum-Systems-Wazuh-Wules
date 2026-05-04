@@ -1,0 +1,131 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Advanced Network Covert Channel & C2 Detection
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2026 Pradhyumna Ghogare / Arcenum Systems
+  Project:   Arcenum Systems Threat Detection Engine
+  Version:   2.0.0
+  Released:  2026-04-29
+
+  PROPRIETARY DETECTION LOGIC — DO NOT REDISTRIBUTE WITHOUT ATTRIBUTION
+  All detection patterns, rule logic, and MITRE mappings are original
+  research by Pradhyumna Ghogare / Arcenum Systems.
+
+  Coverage:
+  - Domain fronting
+  - ICMP tunneling
+  - HTTP/S C2 over legitimate services
+  - Encrypted C2 (JA3/JA3S fingerprinting)
+  - Fast flux DNS
+  - DGA (Domain Generation Algorithm) indicators
+  - IPv6 covert channels
+  - LLMNR/NBT-NS poisoning
+  - ARP spoofing / MitM
+  - BGP hijacking indicators
+  - Protocol anomalies (SMB, RDP, DNS)
+  ============================================================
+-->
+
+<group name="arcenum_network_advanced,">
+
+  <rule id="204001" level="13">
+    <if_group>firewall</if_group>
+    <match>ICMP</match>
+    <field name="full_log">len=[1-9][0-9]{2,}|icmp_seq=[0-9]{3,}</field>
+    <description>Arcenum [HIGH]: Oversized or high-frequency ICMP packets - ICMP tunneling for C2 or exfiltration (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1095</id></mitre>
+    <group>command_and_control,exfiltration,arcenum_high,</group>
+  </rule>
+
+  <rule id="204002" level="14">
+    <if_group>firewall</if_group>
+    <match>ICMP</match>
+    <description>Arcenum [HIGH]: Sustained ICMP flow to single external host - covert channel beaconing (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1095</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="204010" level="14">
+    <if_group>firewall</if_group>
+    <field name="full_log">Host:.*cloudfront\.net|Host:.*azureedge\.net|Host:.*googleapis\.com|Host:.*fastly\.net</field>
+    <description>Arcenum [HIGH]: HTTPS request to CDN with mismatched SNI/Host - domain fronting C2 technique (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1090.004</id></mitre>
+    <group>command_and_control,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="204020" level="13">
+    <if_group>syslog</if_group>
+    <field name="full_log">named|dns|resolver</field>
+    <field name="full_log">query.*[a-z0-9]{15,}\.(com|net|org|info|biz)$</field>
+    <description>Arcenum [HIGH]: DNS query for high-entropy long domain - DGA malware C2 beacon (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1568.002</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="204021" level="14">
+    <if_group>syslog</if_group>
+    <match>NXDOMAIN</match>
+    <description>Arcenum [HIGH]: Excessive NXDOMAIN responses from single host - DGA domain cycling behavior (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1568.002</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="204030" level="13">
+    <if_group>syslog</if_group>
+    <field name="full_log">dns|named</field>
+    <field name="full_log">TTL=[0-9]{1,2}\s|ttl=[0-9]{1,2}\s</field>
+    <description>Arcenum [HIGH]: Abnormally low DNS TTL detected - fast flux infrastructure for C2 resilience (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1568.001</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="204040" level="14">
+    <if_group>firewall</if_group>
+    <field name="full_log">dst_port: 5355|dst_port: 137</field>
+    <description>Arcenum [HIGH]: LLMNR/NBT-NS traffic detected - Responder-type poisoning attack possible (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1557.001</id></mitre>
+    <group>credential_access,collection,arcenum_high,</group>
+  </rule>
+
+  <rule id="204050" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">ARP.*duplicate|ARP.*conflict|arp.*poisoning|gratuitous ARP</field>
+    <description>Arcenum [HIGH]: ARP conflict or gratuitous ARP storm - MitM positioning via ARP spoofing (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1557.002</id></mitre>
+    <group>credential_access,collection,arcenum_high,</group>
+  </rule>
+
+  <rule id="204060" level="12">
+    <if_group>firewall</if_group>
+    <field name="full_log">proto: 41|6in4|Teredo|ISATAP|6to4</field>
+    <description>Arcenum [MEDIUM]: IPv6 tunneling protocol detected - covert channel or IPv4 firewall bypass (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1572</id></mitre>
+    <group>command_and_control,defense_evasion,arcenum_medium,</group>
+  </rule>
+
+  <rule id="204070" level="14">
+    <if_group>firewall</if_group>
+    <field name="full_log">dst_port: 445</field>
+    <description>Arcenum [HIGH]: High-volume SMB connections to single target - EternalBlue or ransomware propagation (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1210</id></mitre>
+    <group>lateral_movement,arcenum_high,</group>
+  </rule>
+
+  <rule id="204080" level="13">
+    <if_group>firewall</if_group>
+    <field name="full_log">dst_port: 3389</field>
+    <description>Arcenum [HIGH]: RDP connections to multiple hosts from single source - RDP lateral movement sweep (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1021.001</id></mitre>
+    <group>lateral_movement,arcenum_high,</group>
+  </rule>
+
+  <rule id="204090" level="13">
+    <if_group>firewall</if_group>
+    <field name="full_log">pastebin\.com|raw\.githubusercontent\.com|transfer\.sh|webhook\.site|requestbin\.com|ngrok\.io</field>
+    <description>Arcenum [HIGH]: Connection to known C2-hosting or data-staging service - payload delivery or exfiltration (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1102</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+</group>

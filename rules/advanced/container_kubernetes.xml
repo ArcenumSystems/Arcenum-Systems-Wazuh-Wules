@@ -1,0 +1,136 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Container & Kubernetes Attack Detection
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2026 Pradhyumna Ghogare / Arcenum Systems
+  Project:   Arcenum Systems Threat Detection Engine
+  Version:   2.0.0
+  Released:  2026-04-29
+
+  PROPRIETARY DETECTION LOGIC — DO NOT REDISTRIBUTE WITHOUT ATTRIBUTION
+  All detection patterns, rule logic, and MITRE mappings are original
+  research by Pradhyumna Ghogare / Arcenum Systems.
+
+  Coverage:
+  - Docker socket abuse
+  - Privileged container escape
+  - Kubernetes API server abuse
+  - Service account token theft
+  - etcd direct access
+  - K8s RBAC escalation
+  - Malicious admission controller
+  - Container image backdoor
+  - Pod escape via hostPID/hostNetwork
+  - Cryptomining in containers
+  - Kubernetes secret enumeration
+  ============================================================
+-->
+
+<group name="arcenum_container_k8s,">
+
+  <rule id="205001" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">\/var\/run\/docker\.sock|docker.*--privileged|docker.*--cap-add.*SYS_ADMIN</field>
+    <description>Arcenum [CRITICAL]: Docker socket or privileged container access - container escape to host imminent (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1611</id></mitre>
+    <group>privilege_escalation,container_escape,arcenum_critical,</group>
+  </rule>
+
+  <rule id="205002" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">docker.*run.*--pid=host|docker.*run.*--network=host|docker.*run.*--ipc=host</field>
+    <description>Arcenum [CRITICAL]: Container launched with host namespace sharing - isolation bypass (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1611</id></mitre>
+    <group>privilege_escalation,container_escape,arcenum_critical,</group>
+  </rule>
+
+  <rule id="205010" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">mount.*\/host|mount.*\/proc.*\/host|chroot.*\/host\b</field>
+    <description>Arcenum [CRITICAL]: Container attempting to mount host filesystem - active escape attempt (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1611</id></mitre>
+    <group>privilege_escalation,container_escape,arcenum_critical,</group>
+  </rule>
+
+  <rule id="205011" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">cgroup.*release_agent|notify_on_release.*1|\/sys\/fs\/cgroup.*cmd</field>
+    <description>Arcenum [CRITICAL]: cgroup release_agent escape technique detected - CVE-2022-0492 style breakout (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1611</id></mitre>
+    <group>privilege_escalation,container_escape,arcenum_critical,</group>
+  </rule>
+
+  <rule id="205020" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">kubectl.*exec.*-it|kubectl.*exec.*\/bin\/sh|kubectl.*exec.*\/bin\/bash</field>
+    <description>Arcenum [HIGH]: kubectl exec shell into running pod - interactive access for lateral movement (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1609</id></mitre>
+    <group>execution,lateral_movement,arcenum_high,</group>
+  </rule>
+
+  <rule id="205021" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">kubectl.*create.*clusterrolebinding.*cluster-admin|kubectl.*create.*rolebinding.*cluster-admin</field>
+    <description>Arcenum [CRITICAL]: Cluster-admin role binding created - full Kubernetes cluster compromise (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1078.001</id></mitre>
+    <group>privilege_escalation,arcenum_critical,</group>
+  </rule>
+
+  <rule id="205030" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">\/var\/run\/secrets\/kubernetes\.io\/serviceaccount\/token|cat.*serviceaccount.*token|cp.*serviceaccount.*token</field>
+    <description>Arcenum [HIGH]: Kubernetes service account token read - credential theft for API server access (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1528</id></mitre>
+    <group>credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="205040" level="15">
+    <if_group>firewall</if_group>
+    <field name="full_log">dst_port: 2379|dst_port: 2380</field>
+    <description>Arcenum [CRITICAL]: Direct etcd port access - all K8s secrets exposed including service accounts (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1552.007</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="205050" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">kubectl.*get secrets.*--all-namespaces|kubectl.*get secret.*-o yaml|kubectl.*describe secret</field>
+    <description>Arcenum [HIGH]: Kubernetes secrets bulk enumeration - credential harvesting across namespaces (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1552.007</id></mitre>
+    <group>credential_access,discovery,arcenum_high,</group>
+  </rule>
+
+  <rule id="205060" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">xmrig|minerd|cryptonight|stratum\+tcp|monero.*pool|mining.*pool|coinhive</field>
+    <description>Arcenum [HIGH]: Cryptominer process detected in container - resource hijacking (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1496</id></mitre>
+    <group>resource_hijacking,arcenum_high,</group>
+  </rule>
+
+  <rule id="205070" level="13">
+    <if_group>syslog</if_group>
+    <field name="full_log">docker.*pull.*latest\b|docker.*run.*:latest\b</field>
+    <description>Arcenum [MEDIUM]: Container image pulled without pinned digest - supply chain risk via mutable tag (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1525</id></mitre>
+    <group>persistence,arcenum_medium,</group>
+  </rule>
+
+  <rule id="205071" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">docker.*pull.*[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|docker.*run.*[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}</field>
+    <description>Arcenum [CRITICAL]: Container image pulled from raw IP address registry - malicious image delivery (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1525</id></mitre>
+    <group>persistence,arcenum_critical,</group>
+  </rule>
+
+  <rule id="205080" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">kubectl.*patch.*clusterrole|kubectl.*edit.*clusterrole|kubectl.*apply.*clusterrole</field>
+    <description>Arcenum [CRITICAL]: ClusterRole modified via kubectl - Kubernetes RBAC privilege escalation (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1078.001</id></mitre>
+    <group>privilege_escalation,arcenum_critical,</group>
+  </rule>
+
+</group>

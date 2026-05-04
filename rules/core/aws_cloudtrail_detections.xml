@@ -1,0 +1,135 @@
+<!--
+  Arcenum Systems - AWS CloudTrail Detection Rules
+  Author: Pradhyumna Ghogare
+  Project: Arcenum Systems
+  Version: 1.0.0
+  Last Updated: 2026-04-24
+
+  Coverage:
+  - IAM privilege escalation
+  - S3 bucket exposure / exfiltration
+  - EC2 instance abuse
+  - CloudTrail tampering / log deletion
+  - Root account usage
+  - Reconnaissance via Describe/List calls
+  - Lambda/ECS abuse for persistence
+-->
+
+<group name="arcenum_aws_cloudtrail,">
+
+  <rule id="102001" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.userIdentity.type">Root</field>
+    <description>Arcenum [CRITICAL]: AWS Root account activity detected - Attackers use root for complete resource control and bypassing guardrails (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1078.004</id></mitre>
+    <group>initial_access,privilege_escalation,arcenum_critical,</group>
+  </rule>
+
+  <rule id="102010" level="13">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">AttachUserPolicy|AttachRolePolicy|PutUserPolicy|PutRolePolicy</field>
+    <description>Arcenum [HIGH]: IAM policy attached to user/role - Attacker attempting privilege escalation to gain admin access (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1078.004</id></mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="102011" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">CreateAccessKey</field>
+    <description>Arcenum [HIGH]: New IAM access key created - Attacker establishing persistent backdoor access to AWS environment (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1098.001</id></mitre>
+    <group>persistence,credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="102012" level="13">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">AddUserToGroup</field>
+    <description>Arcenum [HIGH]: User added to IAM group - Unauthorized privilege grant for lateral movement (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1078.004</id></mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="102013" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">UpdateAssumeRolePolicy</field>
+    <description>Arcenum [HIGH]: IAM role trust policy updated - Attacker setting up cross-account privilege escalation (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1548</id></mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="102020" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">StopLogging|DeleteTrail|UpdateTrail</field>
+    <description>Arcenum [CRITICAL]: CloudTrail logging disabled or modified - Active defense evasion to hide malicious API calls (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.008</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="102021" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">DeleteFlowLogs|DisableVpcClassicLink</field>
+    <description>Arcenum [HIGH]: VPC flow logs deleted - Attacker intentionally removing network visibility to hide C2/exfil (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.008</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="102030" level="13">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">PutBucketPolicy|PutBucketAcl</field>
+    <description>Arcenum [HIGH]: S3 bucket policy/ACL modified - Attacker exposing bucket publicly for data exfiltration (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1530</id></mitre>
+    <group>exfiltration,arcenum_high,</group>
+  </rule>
+
+  <rule id="102031" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">GetObject</field>
+    <field name="aws.requestParameters.bucketName">sensitive|prod|production|backup|db|database|credentials|secret</field>
+    <description>Arcenum [HIGH]: Sensitive S3 bucket object access - Active data exfiltration of critical databases or secrets (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1530</id></mitre>
+    <group>exfiltration,arcenum_high,</group>
+  </rule>
+
+  <rule id="102040" level="12">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">RunInstances</field>
+    <description>Arcenum [MEDIUM]: New EC2 instance launched - Possible resource hijacking for cryptomining or rogue C2 infra (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1578.002</id></mitre>
+    <group>resource_hijacking,arcenum_medium,</group>
+  </rule>
+
+  <rule id="102041" level="13">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">AuthorizeSecurityGroupIngress</field>
+    <description>Arcenum [HIGH]: Security group inbound rule added - Attacker opening unauthorized external access (e.g. SSH/RDP) (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.007</id></mitre>
+    <group>defense_evasion,initial_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="102050" level="10">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">ListBuckets|DescribeInstances|ListUsers|ListRoles|GetAccountAuthorizationDetails</field>
+    <description>Arcenum [MEDIUM]: AWS environment enumeration detected - Attacker performing discovery and mapping before lateral movement (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1580</id></mitre>
+    <group>discovery,arcenum_medium,</group>
+  </rule>
+
+  <rule id="102060" level="12">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">ConsoleLogin</field>
+    <field name="aws.responseElements.ConsoleLogin">Failure</field>
+    <description>Arcenum [MEDIUM]: AWS Console login failure - Potential brute force or credential stuffing attack on console (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1110</id></mitre>
+    <group>initial_access,arcenum_medium,</group>
+  </rule>
+
+  <rule id="102061" level="11">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">ConsoleLogin</field>
+    <field name="aws.additionalEventData.MFAUsed">No</field>
+    <description>Arcenum [MEDIUM]: AWS Console login without MFA - Security policy violation and high risk of account takeover (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1078.004</id></mitre>
+    <group>initial_access,arcenum_medium,</group>
+  </rule>
+
+</group>

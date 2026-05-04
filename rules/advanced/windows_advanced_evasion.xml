@@ -1,0 +1,162 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Advanced Windows Evasion & Defense Bypass Rules
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2026 Pradhyumna Ghogare / Arcenum Systems
+  Project:   Arcenum Systems Threat Detection Engine
+  Version:   2.0.0
+  Released:  2026-04-29
+
+  PROPRIETARY DETECTION LOGIC — DO NOT REDISTRIBUTE WITHOUT ATTRIBUTION
+  All detection patterns, rule logic, and MITRE mappings are original
+  research by Pradhyumna Ghogare / Arcenum Systems.
+
+  Coverage:
+  - ETW (Event Tracing for Windows) tampering
+  - AMSI bypass techniques
+  - COM object hijacking
+  - Process hollowing indicators
+  - DLL sideloading / search order hijacking
+  - Token manipulation & impersonation
+  - LSASS protection bypass (PPL)
+  - Windows Defender tampering
+  - UAC bypass techniques
+  - Timestomping / metadata manipulation
+  - NTFS alternate data streams
+  - Shadow copy deletion (ransomware prep)
+  - WMI subscription persistence
+  - Registry run key abuse
+  ============================================================
+-->
+
+<group name="arcenum_windows_advanced,">
+
+  <rule id="201001" level="15">
+    <field name="win.system.eventID">^4104$</field>
+    <field name="full_log">EtwEventWrite|NtTraceEvent|EtwpCreateEtwThread|patch.*etw|ETW.*disabled</field>
+    <description>Arcenum [CRITICAL]: ETW patching detected in PowerShell script - active telemetry blind spot creation (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.006</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="201002" level="15">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="full_log">logman.*stop|wevtutil.*cl|wevtutil.*sl.*\/e:false</field>
+    <description>Arcenum [CRITICAL]: Windows event log channel disabled or cleared - anti-forensics active (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1070.001</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="201010" level="15">
+    <field name="win.system.eventID">^4104$</field>
+    <field name="full_log">AmsiScanBuffer|AmsiInitialize|amsiContext|amsiSession|[Aa]msi.*bypass|[Aa]msi.*patch</field>
+    <description>Arcenum [CRITICAL]: AMSI bypass technique in PowerShell script block - AV evasion in progress (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.001</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="201011" level="14">
+    <field name="win.system.eventID">^4104$</field>
+    <field name="full_log">Reflection\.Assembly|System\.Runtime\.InteropServices|VirtualProtect|WriteProcessMemory</field>
+    <description>Arcenum [HIGH]: .NET reflection with memory manipulation - AMSI/ETW bypass via CLR (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.001</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="201020" level="13">
+    <field name="win.system.eventID">^13$</field>
+    <field name="full_log">HKCU\\Software\\Classes\\CLSID|HKCU\\Software\\Classes\\.*InprocServer32</field>
+    <description>Arcenum [HIGH]: COM object registered in HKCU - COM hijacking for persistence or UAC bypass (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1546.015</id></mitre>
+    <group>persistence,privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="201030" level="15">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="full_log">NtUnmapViewOfSection|ZwUnmapViewOfSection|VirtualAllocEx.*MEM_COMMIT|WriteProcessMemory.*ResumeThread</field>
+    <description>Arcenum [CRITICAL]: Process hollowing sequence detected - legitimate process replaced with malicious payload (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1055.012</id></mitre>
+    <group>defense_evasion,privilege_escalation,arcenum_critical,</group>
+  </rule>
+
+  <rule id="201040" level="13">
+    <if_group>syscheck</if_group>
+    <field name="syscheck.path">C:\\Windows\\System32\\.*\.dll|C:\\Windows\\SysWOW64\\.*\.dll</field>
+    <description>Arcenum [HIGH]: System32/SysWOW64 DLL modified - DLL hijacking or replacement attack (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1574.001</id></mitre>
+    <group>persistence,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="201041" level="14">
+    <field name="win.system.eventID">^7$</field>
+    <field name="full_log">ImageLoaded.*\\Temp\\|ImageLoaded.*\\AppData\\|ImageLoaded.*\\Downloads\\</field>
+    <description>Arcenum [HIGH]: DLL loaded from user-writable path - DLL sideloading from suspicious location (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1574.002</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="201050" level="15">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="full_log">mimidrv|PPLdump|PPLKiller|ProtectedProcessLight|lsass.*dump|procdump.*lsass|comsvcs.*MiniDump</field>
+    <description>Arcenum [CRITICAL]: LSASS PPL protection bypass tool detected - credential dumping imminent (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1003.001</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="201060" level="15">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="full_log">Set-MpPreference.*DisableRealtimeMonitoring.*\$true|Add-MpPreference.*ExclusionPath|sc.*stop.*WinDefend|reg.*add.*DisableAntiSpyware</field>
+    <description>Arcenum [CRITICAL]: Windows Defender disabled or exclusion added - AV evasion setup (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.001</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="201070" level="14">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="full_log">fodhelper\.exe|eventvwr\.exe.*\/ms|sdclt\.exe|computerdefaults\.exe|slui\.exe.*\/verb runas</field>
+    <description>Arcenum [HIGH]: Known UAC bypass binary executed - privilege escalation without prompt (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1548.002</id></mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="201080" level="13">
+    <field name="win.system.eventID">^4663$</field>
+    <field name="full_log">SetFileTime|NtSetInformationFile.*FileBasicInformation</field>
+    <description>Arcenum [HIGH]: File timestamp modification detected - anti-forensic timestomping (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1070.006</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="201090" level="13">
+    <field name="win.system.eventID">^4663$</field>
+    <field name="full_log">:\w+\.\w+$|:Zone\.Identifier|:\$DATA</field>
+    <description>Arcenum [HIGH]: NTFS alternate data stream access - hidden payload storage technique (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1564.004</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="201100" level="15">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="full_log">vssadmin.*delete.*shadows|wmic.*shadowcopy.*delete|bcdedit.*recoveryenabled.*no|wbadmin.*delete.*catalog</field>
+    <description>Arcenum [CRITICAL]: Shadow copy deletion and recovery disabled - ransomware pre-encryption stage (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1490</id></mitre>
+    <group>impact,ransomware,arcenum_critical,</group>
+  </rule>
+
+  <rule id="201110" level="14">
+    <field name="win.system.eventID">^5861$</field>
+    <description>Arcenum [HIGH]: WMI permanent subscription created - fileless persistence mechanism (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1546.003</id></mitre>
+    <group>persistence,arcenum_high,</group>
+  </rule>
+
+  <rule id="201120" level="12">
+    <field name="win.system.eventID">^13$</field>
+    <field name="full_log">HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run|HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run|HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon</field>
+    <description>Arcenum [HIGH]: Registry Run key modified - autostart persistence established (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1547.001</id></mitre>
+    <group>persistence,arcenum_high,</group>
+  </rule>
+
+</group>

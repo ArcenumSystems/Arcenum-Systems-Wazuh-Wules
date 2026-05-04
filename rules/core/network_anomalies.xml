@@ -1,0 +1,105 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Network Anomaly Detection Rules
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2024 Pradhyumna Ghogare / Arcenum Systems
+  Version:   1.3.0
+  Updated:   2024
+
+  ZERO EXTERNAL DEPENDENCIES — No CDB lists required.
+  Drop into /var/ossec/etc/rules/ and restart wazuh-manager.
+  ============================================================
+-->
+
+<group name="arcenum_network_anomalies,">
+
+  <rule id="103001" level="10">
+    <if_group>firewall</if_group>
+    <match>DENY</match>
+    <description>Arcenum [MEDIUM]: Firewall denied connection - Attacker performing port scan to map attack surface (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1046</id></mitre>
+    <group>discovery,arcenum_medium,</group>
+  </rule>
+
+  <rule id="103002" level="12">
+    <if_group>firewall</if_group>
+    <match>DROP</match>
+    <description>Arcenum [HIGH]: Firewall dropped packet - Attacker sweeping network for active hosts and vulnerable services (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1018</id></mitre>
+    <group>discovery,arcenum_high,</group>
+  </rule>
+
+  <rule id="103010" level="13">
+    <if_group>syslog</if_group>
+    <match>named</match>
+    <description>Arcenum [HIGH]: DNS named activity - Attacker exfiltrating data or beaconing via DNS tunneling (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1071.004</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="103011" level="11">
+    <if_group>syslog</if_group>
+    <match>query</match>
+    <description>Arcenum [MEDIUM]: DNS query activity - Attacker malware using Domain Generation Algorithms (DGA) for C2 connection (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1071.004</id></mitre>
+    <group>command_and_control,arcenum_medium,</group>
+  </rule>
+
+  <rule id="103021" level="11">
+    <if_group>firewall</if_group>
+    <match>4444</match>
+    <description>Arcenum [HIGH]: Connection on known C2 port 4444 - Attacker establishing standard Metasploit/Cobalt Strike reverse shell (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1571</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="103022" level="11">
+    <if_group>firewall</if_group>
+    <match>31337</match>
+    <description>Arcenum [HIGH]: Connection on known C2 port 31337 - Attacker establishing connection via known backdoor/trojan port (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1571</id></mitre>
+    <group>command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="103030" level="11">
+    <if_group>firewall</if_group>
+    <match>dpt=445</match>
+    <description>Arcenum [MEDIUM]: SMB port 445 activity - Attacker moving laterally using SMB/PsExec across the network (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1021</id></mitre>
+    <group>lateral_movement,arcenum_medium,</group>
+  </rule>
+
+  <rule id="103031" level="11">
+    <if_group>firewall</if_group>
+    <match>dpt=3389</match>
+    <description>Arcenum [MEDIUM]: RDP port 3389 activity - Attacker moving laterally via remote desktop access (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1021.001</id></mitre>
+    <group>lateral_movement,arcenum_medium,</group>
+  </rule>
+
+  <rule id="103041" level="12">
+    <if_group>firewall</if_group>
+    <match>dpt=21</match>
+    <description>Arcenum [MEDIUM]: FTP outbound connection - Attacker exfiltrating sensitive files via unencrypted protocol (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1048.003</id></mitre>
+    <group>exfiltration,arcenum_medium,</group>
+  </rule>
+
+  <rule id="103050" level="13">
+    <if_group>syslog</if_group>
+    <match>tor</match>
+    <description>Arcenum [HIGH]: Tor client activity - Attacker using Tor network for anonymized C2 communication and defense evasion (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1090.003</id></mitre>
+    <group>command_and_control,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="103051" level="11">
+    <if_group>firewall</if_group>
+    <match>dpt=9050</match>
+    <description>Arcenum [MEDIUM]: Tor port 9050 usage in network traffic - Attacker proxying traffic to hide origin (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1090.003</id></mitre>
+    <group>command_and_control,arcenum_medium,</group>
+  </rule>
+
+</group>

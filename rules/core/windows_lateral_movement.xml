@@ -1,0 +1,136 @@
+<!--
+  ============================================================
+  ARCENUM SYSTEMS — Windows Lateral Movement & Attack Detection
+  ============================================================
+  Author:    Pradhyumna Ghogare
+  Copyright: © 2024 Pradhyumna Ghogare / Arcenum Systems
+  Version:   1.1.0
+  Updated:   2024
+
+  ZERO EXTERNAL DEPENDENCIES — No CDB lists required.
+  Drop into /var/ossec/etc/rules/ and restart wazuh-manager.
+
+  Rule ID Range: 105001-105099
+
+  Coverage:
+  - Credential dumping (LSASS, SAM, NTDS)
+  - Lateral movement via PsExec, WMI, SMB
+  - Active Directory enumeration
+  - PowerShell abuse
+  - Scheduled task abuse
+  - Token impersonation
+  ============================================================
+-->
+
+<group name="arcenum_windows_lateral,">
+
+  <rule id="105001" level="15">
+    <field name="win.system.eventID">^10$</field>
+    <match>lsass.exe</match>
+    <description>Arcenum [CRITICAL]: LSASS process access - Attacker attempting to dump credentials from memory using tools like Mimikatz (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1003.001</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="105002" level="14">
+    <field name="win.system.eventID">^7045$|^4688$</field>
+    <field name="win.eventdata.ObjectName|win.eventdata.ImagePath">SAM|NTDS|ntds\.dit</field>
+    <description>Arcenum [CRITICAL]: SAM/NTDS database access - Attacker extracting AD credentials offline (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1003.002</id></mitre>
+    <group>credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="105003" level="13">
+    <field name="win.system.eventID">^4648$</field>
+    <description>Arcenum [HIGH]: Explicit credential logon - Attacker executing Pass-the-Hash for lateral movement (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1550.002</id></mitre>
+    <group>lateral_movement,credential_access,arcenum_high,</group>
+  </rule>
+
+  <rule id="105010" level="13">
+    <field name="win.system.eventID">^7045$</field>
+    <field name="win.eventdata.ImagePath">PSEXESVC|psexec</field>
+    <description>Arcenum [HIGH]: PsExec service installation - Attacker executing commands remotely via SMB lateral movement (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1021.002</id></mitre>
+    <group>lateral_movement,arcenum_high,</group>
+  </rule>
+
+  <rule id="105011" level="12">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="win.eventdata.commandLine">wmic.*process.*call.*create|wmic.*os.*get</field>
+    <description>Arcenum [HIGH]: WMIC remote process creation - Attacker using WMI for fileless lateral movement across endpoints (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1047</id></mitre>
+    <group>lateral_movement,execution,arcenum_high,</group>
+  </rule>
+
+  <rule id="105012" level="12">
+    <field name="win.system.eventID">^4624$</field>
+    <field name="win.eventdata.logonType">^3$</field>
+    <description>Arcenum [HIGH]: Network logon Type 3 - Attacker authenticating over network via SMB/RPC for lateral movement (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1021.002</id></mitre>
+    <group>lateral_movement,arcenum_medium,</group>
+  </rule>
+
+  <rule id="105020" level="11">
+    <field name="win.system.eventID">^4662$</field>
+    <description>Arcenum [MEDIUM]: AD object access - Attacker mapping domain trusts and high-value targets via BloodHound/LDAP (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1087.002</id></mitre>
+    <group>discovery,arcenum_medium,</group>
+  </rule>
+
+  <rule id="105021" level="13">
+    <field name="win.system.eventID">^4688$</field>
+    <field name="win.eventdata.commandLine">net user|net group|net localgroup|whoami /all</field>
+    <description>Arcenum [HIGH]: AD/local account enumeration commands executed - Attacker discovering local admins and domain group memberships (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1087.001</id></mitre>
+    <group>discovery,arcenum_high,</group>
+  </rule>
+
+  <rule id="105030" level="13">
+    <field name="win.system.eventID">^4104$</field>
+    <field name="win.eventdata.scriptBlockText">Invoke-Mimikatz|Invoke-Empire|Invoke-PSInject|PowerSploit|Get-GPPPassword</field>
+    <description>Arcenum [CRITICAL]: Offensive PowerShell framework in script block logging - Attacker executing known post-exploitation frameworks (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1059.001</id></mitre>
+    <group>execution,credential_access,arcenum_critical,</group>
+  </rule>
+
+  <rule id="105031" level="12">
+    <field name="win.system.eventID">^4104$</field>
+    <field name="win.eventdata.scriptBlockText">-EncodedCommand|-enc |-NoP|-NonI|-W Hidden|-Exec Bypass</field>
+    <description>Arcenum [HIGH]: PowerShell obfuscation flags - Attacker attempting to bypass AMSI and hide script execution intent (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1059.001</id></mitre>
+    <group>execution,defense_evasion,arcenum_high,</group>
+  </rule>
+
+  <rule id="105032" level="11">
+    <field name="win.system.eventID">^4104$</field>
+    <field name="win.eventdata.scriptBlockText">DownloadString|DownloadFile|IEX|Invoke-Expression</field>
+    <description>Arcenum [HIGH]: PowerShell remote download and execute - Attacker acting as dropper to fetch secondary payloads (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1105</id></mitre>
+    <group>execution,command_and_control,arcenum_high,</group>
+  </rule>
+
+  <rule id="105040" level="12">
+    <field name="win.system.eventID">^4698$</field>
+    <description>Arcenum [MEDIUM]: Scheduled task created - Attacker establishing persistence to execute payloads on startup or schedule (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1053.005</id></mitre>
+    <group>persistence,arcenum_medium,</group>
+  </rule>
+
+  <rule id="105041" level="13">
+    <field name="win.system.eventID">^4698$</field>
+    <field name="win.eventdata.taskContent">powershell|cmd\.exe|wscript|cscript|mshta|rundll32</field>
+    <description>Arcenum [HIGH]: Scheduled task with suspicious executable - Attacker hiding malicious commands within scheduled tasks (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1053.005</id></mitre>
+    <group>persistence,arcenum_high,</group>
+  </rule>
+
+  <rule id="105050" level="13">
+    <field name="win.system.eventID">^4624$</field>
+    <field name="win.eventdata.logonType">^9$</field>
+    <description>Arcenum [HIGH]: NewCredentials logon RunAs - Attacker impersonating tokens to bypass UAC or access restricted resources (© 2024 Pradhyumna Ghogare / Arcenum Systems)</description>
+    <mitre><id>T1134.001</id></mitre>
+    <group>privilege_escalation,arcenum_high,</group>
+  </rule>
+
+</group>
