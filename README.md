@@ -296,11 +296,26 @@ Built by **[Pradhyumna Ghogare](https://github.com/PradhyumnaGhogare)** as part 
 
 Arcenum Systems is a SIEM+UEBA platform with Wazuh at its core, extended with a custom Node.js backend, React frontend, and behavioral analytics layer — built to give lean security teams enterprise-grade threat detection without enterprise-grade budgets.
 
-- 🌐 **Platform:** [arcenum-systems.vercel.app](https://arcenum-systems.vercel.app)
+
 - 🔬 **Wolfsense EDR:** [github.com/PradhyumnaGhogare/wolfsense-edr](https://github.com/PradhyumnaGhogare/wolfsense-edr)
 - 👤 **GitHub:** [github.com/PradhyumnaGhogare](https://github.com/PradhyumnaGhogare)
 
 ---
+
+## Live Production Alerts
+
+Tested and verified on **Wazuh 4.14.5** — rules firing in production environment.
+
+### Linux Suspicious Activity — Live Dashboard
+![Dashboard Alerts](screenshots/dashboard_linux_alerts.png)
+
+### Network Anomalies — Live Dashboard
+![Network Alerts](screenshots/network_anomalies_alerts.png)
+
+### Windows Lateral Movement — Dashboard
+![Windows Alerts](screenshots/windows_alerts.png)
+
+> Production verified — Wazuh 4.14.5 | Pradhyumna Ghogare / Arcenum Systems
 
 ## License & Attribution
 
