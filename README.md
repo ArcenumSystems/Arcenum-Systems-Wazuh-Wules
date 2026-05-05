@@ -342,6 +342,6 @@ All detection patterns, rule logic, and MITRE mappings are original research. If
 
 *Engineered for adversaries who think no one is watching.*
 
-**Pradhyumna Ghogare, Arcenum Systems © 2026**
+**Pradhyumna Ghogare, Arcenum Systems © 2024**
 
 </div>
